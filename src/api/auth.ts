@@ -7,6 +7,15 @@ type RegisterData = {
     password: string
 }
 
+type LoginData = {
+    email: string,
+    password: string
+}
+
 export const RegisterUser = (data: RegisterData) => {
     return API.post<AuthRespose>('/auth/register', data)
+}
+
+export const LoginUser = (data: LoginData) =>{
+    return API.post<AuthRespose>('/auth/login', data)
 }
