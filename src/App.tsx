@@ -1,11 +1,15 @@
+import { BrowserRouter, Route, Routes } from "react-router-dom";
+import Auth from "./pages/Auth";
 
 const App = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <h1 className="text-4xl font-bold text-blue-600">
-        Car Rental System
-      </h1>
-    </div>
+    <>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/auth" element={<Auth/>}/>
+        </Routes>
+      </BrowserRouter>
+    </>
   );
 };
 
