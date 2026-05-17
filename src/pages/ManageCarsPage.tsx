@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { deleteCar} from "../api/admin";
+import { deleteCar } from "../api/admin";
 import { getCars } from "../api/cars";
 
 type Car = {
@@ -24,7 +24,7 @@ const ManageCarsPage = () => {
       const data = await getCars();
       setCars(data.car || []);
     } catch (error) {
-      console.log(error);
+      console.error("Failed to fetch cars:", error);
     } finally {
       setLoading(false);
     }
@@ -49,36 +49,29 @@ const ManageCarsPage = () => {
 
   return (
     <div className="p-6 space-y-6">
-
-      {/* HEADER */}
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">Manage Cars</h1>
           <p className="text-gray-500 mt-1">View and manage all cars</p>
         </div>
-
         <Link
           to="/admin/create"
-          className="bg-black text-white px-5 py-3 rounded-lg"
+          className="bg-black text-white px-5 py-3 rounded-lg hover:bg-gray-800 transition-colors"
         >
           Add Car
         </Link>
       </div>
 
-      {/* LOADING */}
       {loading && <p>Loading cars...</p>}
 
-      {/* EMPTY */}
       {!loading && cars.length === 0 && (
         <p className="text-center py-10">No cars found</p>
       )}
 
-      {/* TABLE */}
       {!loading && cars.length > 0 && (
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse border">
-
-            <thead className="bg-gray-100">
+        <div className="overflow-x-auto border rounded-lg">
+          <table className="w-full border-collapse">
+            <thead className="bg-gray-100 border-b">
               <tr>
                 <th className="p-3 text-left">Image</th>
                 <th className="p-3 text-left">Name</th>
@@ -86,49 +79,45 @@ const ManageCarsPage = () => {
                 <th className="p-3 text-left">Fuel</th>
                 <th className="p-3 text-left">Seats</th>
                 <th className="p-3 text-left">Gear</th>
-                <th className="p-3 text-left">Price</th>
+                <th className="p-3 text-left">Price / Day</th>
                 <th className="p-3 text-left">Actions</th>
               </tr>
             </thead>
-
             <tbody>
               {cars.map((car) => (
-                <tr key={car._id} className="border-t">
-
+                <tr key={car._id} className="border-b last:border-b-0 hover:bg-gray-50 transition-colors">
                   <td className="p-3">
                     <img
                       src={car.image}
-                      className="w-16 h-12 object-cover rounded"
+                      alt={car.name}
+                      className="w-16 h-12 object-cover rounded bg-gray-100"
                     />
                   </td>
-
-                  <td className="p-3">{car.name}</td>
+                  <td className="p-3 font-medium">{car.name}</td>
                   <td className="p-3">{car.brand}</td>
-                  <td className="p-3">{car.fuelType}</td>
+                  <td className="p-3 capitalize">{car.fuelType}</td>
                   <td className="p-3">{car.seats}</td>
-                  <td className="p-3">{car.transmission}</td>
-                  <td className="p-3">₦{car.pricePerDay}</td>
-
-                  <td className="p-3 flex gap-2">
-                    <Link
-                      to={`/admin/edit-car/${car._id}`}
-                      className="px-3 py-1 border rounded"
-                    >
-                      Edit
-                    </Link>
-
-                    <button
-                      onClick={() => handleDelete(car._id)}
-                      className="px-3 py-1 bg-red-600 text-white rounded"
-                    >
-                      Delete
-                    </button>
+                  <td className="p-3 capitalize">{car.transmission}</td>
+                  <td className="p-3">₦{car.pricePerDay.toLocaleString()}</td>
+                  <td className="p-3">
+                    <div className="flex gap-2">
+                      <Link
+                        to={`/admin/edit-car/${car._id}`}
+                        className="px-3 py-1 border rounded hover:bg-gray-50 text-sm transition-colors"
+                      >
+                        Edit
+                      </Link>
+                      <button
+                        onClick={() => handleDelete(car._id)}
+                        className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-sm transition-colors"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </td>
-
                 </tr>
               ))}
             </tbody>
-
           </table>
         </div>
       )}
