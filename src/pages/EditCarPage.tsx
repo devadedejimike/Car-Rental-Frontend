@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { getSingleCar } from "../api/cars";
 import { updateCar } from "../api/admin";
 import BackButton from "../assets/BackButton";
@@ -7,185 +7,240 @@ import BackButton from "../assets/BackButton";
 const EditCarPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
-
+  
   const [formData, setFormData] = useState({
     name: "",
     brand: "",
     pricePerDay: "",
-    image: "",
-    transmission: "",
-    fuelType: "",
-    seats: "",
+    transmission: "automatic",
+    fuelType: "petrol",
+    seats: 4,
     description: "",
     available: true,
   });
+  const [existingImage, setExistingImage] = useState("");
+  const [newImageFile, setNewImageFile] = useState<File | null>(null);
 
-  // FETCH CAR
-  const fetchCar = async () => {
-    try {
-      setLoading(true);
+  useEffect(() => {
+    const fetchCarDetails = async () => {
+      try {
+        if (!id) return;
+        const res = await getSingleCar(id);
+        const car = res.car;
+        
+        setFormData({
+          name: car.name,
+          brand: car.brand,
+          pricePerDay: car.pricePerDay.toString(),
+          transmission: car.transmission || "automatic",
+          fuelType: car.fuelType || "petrol",
+          seats: car.seats,
+          description: car.description,
+          available: car.available !== undefined ? car.available : true,
+        });
+        setExistingImage(car.image);
+      } catch (error) {
+        console.error("Error reading mapping indices:", error);
+        alert("Failed to load car details");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCarDetails();
+  }, [id]);
 
-      const data = await getSingleCar(id as string);
-      const car = data.car;
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+  };
 
-      setFormData({
-        name: car.name || "",
-        brand: car.brand || "",
-        pricePerDay: car.pricePerDay?.toString() || "",
-        image: car.image || "",
-        transmission: car.transmission || "",
-        fuelType: car.fuelType || "",
-        seats: car.seats?.toString() || "",
-        description: car.description || "",
-        available: car.available ?? true,
-      });
-    } catch (error) {
-      console.log(error);
-      alert("Failed to fetch car");
-    } finally {
-      setLoading(false);
+  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, available: e.target.checked });
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setNewImageFile(e.target.files[0]);
     }
   };
 
-  useEffect(() => {
-    fetchCar();
-  }, []);
-
-  // HANDLE CHANGE
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value, type } = e.target;
-
-    setFormData((prev) => ({
-      ...prev,
-      [name]:
-        type === "checkbox"
-          ? (e.target as HTMLInputElement).checked
-          : value,
-    }));
-  };
-
-  // SUBMIT
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     try {
       setUpdating(true);
+      
+      const data = new FormData();
+      data.append("name", formData.name);
+      data.append("brand", formData.brand);
+      data.append("pricePerDay", formData.pricePerDay);
+      data.append("transmission", formData.transmission);
+      data.append("fuelType", formData.fuelType);
+      data.append("seats", formData.seats.toString());
+      data.append("available", formData.available.toString());
+      data.append("description", formData.description);
+      
+      if (newImageFile) {
+        data.append("image", newImageFile);
+      }
 
-      await updateCar(id as string, {
-        ...formData,
-        pricePerDay: Number(formData.pricePerDay),
-        seats: Number(formData.seats),
-      });
-
-      alert("Car updated successfully");
+      await updateCar(id as string, data);
+      alert("Car updated successfully without schema validation errors!");
       navigate("/admin/cars");
     } catch (error: any) {
-      console.log(error);
-      alert(error?.response?.data?.message || "Failed to update car");
+      console.error(error);
+      alert(error?.response?.data?.message || "Failed to update record details");
     } finally {
       setUpdating(false);
     }
   };
 
-  if (loading) return <div className="p-6">Loading...</div>;
+  if (loading) return <div className="p-6 text-center">Reading parameters summary...</div>;
 
   return (
-    <div className="p-6 max-w-3xl">
+    <div className="p-6 max-w-2xl mx-auto space-y-6">
+      <div>
         <BackButton />
-      <h1 className="text-3xl font-bold mb-6">Edit Car</h1>
+        <h1 className="text-3xl font-bold">Edit Car Details</h1>
+        <p className="text-gray-500"></p>
+      </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4 border p-6 rounded-xl bg-white shadow-sm">
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="text-sm font-medium">Car Name</label>
+            <input
+              type="text"
+              name="name"
+              required
+              value={formData.name}
+              onChange={handleChange}
+              className="w-full border p-2.5 rounded-lg mt-1 focus:outline-none focus:ring-1 focus:ring-black"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium">Brand</label>
+            <input
+              type="text"
+              name="brand"
+              required
+              value={formData.brand}
+              onChange={handleChange}
+              className="w-full border p-2.5 rounded-lg mt-1 focus:outline-none focus:ring-1 focus:ring-black"
+            />
+          </div>
+        </div>
 
-        <input
-          name="name"
-          value={formData.name}
-          onChange={handleChange}
-          className="w-full border p-3 rounded-lg"
-          placeholder="Car Name"
-        />
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="text-sm font-medium">Transmission</label>
+            <select
+              name="transmission"
+              value={formData.transmission}
+              onChange={handleChange}
+              className="w-full border p-2.5 rounded-lg mt-1 bg-white focus:outline-none focus:ring-1 focus:ring-black capitalize"
+            >
+              <option value="automatic">Automatic</option>
+              <option value="manual">Manual</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-sm font-medium">Fuel Type</label>
+            <select
+              name="fuelType"
+              value={formData.fuelType}
+              onChange={handleChange}
+              className="w-full border p-2.5 rounded-lg mt-1 bg-white focus:outline-none focus:ring-1 focus:ring-black capitalize"
+            >
+              <option value="petrol">Petrol</option>
+              <option value="diesel">Diesel</option>
+              <option value="electric">Electric</option>
+            </select>
+          </div>
+        </div>
 
-        <input
-          name="brand"
-          value={formData.brand}
-          onChange={handleChange}
-          className="w-full border p-3 rounded-lg"
-          placeholder="Brand"
-        />
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="text-sm font-medium">No of Seats</label>
+            <input
+              type="number"
+              name="seats"
+              required
+              min={1}
+              value={formData.seats}
+              onChange={handleChange}
+              className="w-full border p-2.5 rounded-lg mt-1 focus:outline-none focus:ring-1 focus:ring-black"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium">Price Per Day (₦)</label>
+            <input
+              type="number"
+              name="pricePerDay"
+              required
+              value={formData.pricePerDay}
+              onChange={handleChange}
+              className="w-full border p-2.5 rounded-lg mt-1 focus:outline-none focus:ring-1 focus:ring-black"
+            />
+          </div>
+        </div>
 
-        <input
-          name="pricePerDay"
-          type="number"
-          value={formData.pricePerDay}
-          onChange={handleChange}
-          className="w-full border p-3 rounded-lg"
-          placeholder="Price"
-        />
+        <div className="space-y-2">
+          <label className="text-sm font-medium block">Current Image Preview</label>
+          {existingImage && !newImageFile && (
+            <img src={existingImage} alt="Current entry preview" className="w-32 h-20 object-cover rounded border bg-gray-50" />
+          )}
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleFileChange}
+            className="w-full border p-2 rounded-lg mt-1 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-black file:text-white hover:file:bg-gray-800 cursor-pointer"
+          />
+        </div>
 
-        <input
-          name="image"
-          value={formData.image}
-          onChange={handleChange}
-          className="w-full border p-3 rounded-lg"
-          placeholder="Image URL"
-        />
-
-        <input
-          name="transmission"
-          value={formData.transmission}
-          onChange={handleChange}
-          className="w-full border p-3 rounded-lg"
-          placeholder="Transmission"
-        />
-
-        <input
-          name="fuelType"
-          value={formData.fuelType}
-          onChange={handleChange}
-          className="w-full border p-3 rounded-lg"
-          placeholder="Fuel Type"
-        />
-
-        <input
-          name="seats"
-          type="number"
-          value={formData.seats}
-          onChange={handleChange}
-          className="w-full border p-3 rounded-lg"
-          placeholder="Seats"
-        />
-
-        <textarea
-          name="description"
-          value={formData.description}
-          onChange={handleChange}
-          className="w-full border p-3 rounded-lg"
-          rows={4}
-          placeholder="Description"
-        />
-
-        {/* ✅ AVAILABLE FIX */}
-        <label className="flex items-center gap-2">
+        <div className="flex items-center gap-2 py-2">
           <input
             type="checkbox"
+            id="available"
             name="available"
             checked={formData.available}
-            onChange={handleChange}
+            onChange={handleCheckboxChange}
+            className="w-4 h-4 accent-black cursor-pointer"
           />
-          Available
-        </label>
+          <label htmlFor="available" className="text-sm font-medium cursor-pointer select-none">
+            Vehicle is available for hire
+          </label>
+        </div>
 
-        <button
-          type="submit"
-          disabled={updating}
-          className="bg-black text-white px-6 py-3 rounded-lg"
-        >
-          {updating ? "Updating..." : "Update Car"}
-        </button>
+        <div>
+          <label className="text-sm font-medium">Description</label>
+          <textarea
+            name="description"
+            rows={4}
+            required
+            value={formData.description}
+            onChange={handleChange}
+            className="w-full border p-2.5 rounded-lg mt-1 focus:outline-none focus:ring-1 focus:ring-black resize-none"
+          />
+        </div>
+
+        <div className="flex gap-4 pt-2">
+          <button
+            type="button"
+            onClick={() => navigate("/admin/cars")}
+            className="w-1/2 border py-3 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={updating}
+            className="w-1/2 bg-black text-white py-3 rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:bg-gray-400"
+          >
+            {updating ? "Saving Changes..." : "Apply Updates"}
+          </button>
+        </div>
       </form>
     </div>
   );
