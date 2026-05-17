@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { getSingleCar } from "../api/cars";
 import { createBooking } from "../api/booking";
 
@@ -17,55 +17,37 @@ type Car = {
 
 const SingleCarPage = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
 
-  const [car, setCar] = useState<Car | null>(
-    null
-  );
+  const [car, setCar] = useState<Car | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [bookingLoading, setBookingLoading] = useState(false);
 
-  const [loading, setLoading] =
-    useState(true);
-
-  const [startDate, setStartDate] =
-    useState("");
-
-  const [endDate, setEndDate] =
-    useState("");
-
-  const [bookingLoading, setBookingLoading] =
-    useState(false);
-
-  // FETCH SINGLE CAR
   const fetchCar = async () => {
     try {
       setLoading(true);
-
-      const data = await getSingleCar(
-        id as string
-      );
-
+      const data = await getSingleCar(id as string);
       setCar(data.car);
     } catch (error) {
-      console.log(error);
+      console.error("Error loading product interface:", error);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchCar();
-  }, []);
+    if (id) fetchCar();
+  }, [id]);
 
-  // BOOK CAR
   const handleBooking = async () => {
     if (!startDate || !endDate) {
-      return alert(
-        "Please select booking dates"
-      );
+      return alert("Please select booking dates");
     }
 
     try {
       setBookingLoading(true);
-
       await createBooking({
         carId: id as string,
         startDate,
@@ -73,35 +55,32 @@ const SingleCarPage = () => {
       });
 
       alert("Booking created successfully");
-
       setStartDate("");
       setEndDate("");
+      navigate("/my-bookings");
     } catch (error: any) {
-      console.log(error);
-
-      alert(
-        error?.response?.data?.message ||
-          "Booking failed"
-      );
+      console.error(error);
+      alert(error?.response?.data?.message || "Booking failed");
     } finally {
       setBookingLoading(false);
     }
   };
 
-  // LOADING
   if (loading) {
     return (
       <div className="p-6">
-        <div className="h-[500px] bg-gray-200 animate-pulse rounded-lg" />
+        <div className="h-[500px] w-full bg-gray-200 animate-pulse rounded-xl" />
       </div>
     );
   }
 
-  // NO CAR
   if (!car) {
     return (
-      <div className="p-6">
-        <p>Car not found</p>
+      <div className="p-6 text-center py-20">
+        <h3 className="text-xl font-semibold">Car not found</h3>
+        <button onClick={() => navigate("/cars")} className="mt-4 text-sm text-blue-600 underline">
+          Back to Fleet
+        </button>
       </div>
     );
   }
@@ -109,112 +88,72 @@ const SingleCarPage = () => {
   return (
     <div className="p-6">
       <div className="grid md:grid-cols-2 gap-8">
-
-        {/* IMAGE */}
         <div>
           <img
             src={car.image}
             alt={car.name}
-            className="w-full h-[450px] object-cover rounded-xl"
+            className="w-full h-[450px] object-cover rounded-xl shadow-sm bg-gray-100"
           />
         </div>
 
-        {/* DETAILS */}
-        <div className="space-y-5">
-
-          {/* TITLE */}
+        <div className="space-y-6">
           <div>
-            <h1 className="text-3xl font-bold">
-              {car.name}
-            </h1>
-
-            <p className="text-gray-500">
-              {car.brand}
-            </p>
+            <h1 className="text-4xl font-bold">{car.name}</h1>
+            <p className="text-xl text-gray-500 mt-1">{car.brand}</p>
           </div>
 
-          {/* DESCRIPTION */}
-          <p className="text-gray-700 leading-relaxed">
-            {car.description}
-          </p>
+          <p className="text-gray-700 leading-relaxed">{car.description}</p>
 
-          {/* DETAILS */}
           <div className="grid grid-cols-2 gap-4 text-sm">
-
-            <div className="border p-3 rounded-lg">
-              <span className="font-semibold">
-                Fuel Type:
-              </span>
-              <p>{car.fuelType}</p>
+            <div className="border p-3 rounded-xl bg-gray-50">
+              <span className="text-gray-400 block mb-0.5">Fuel Type</span>
+              <p className="font-semibold capitalize">{car.fuelType}</p>
             </div>
-
-            <div className="border p-3 rounded-lg">
-              <span className="font-semibold">
-                Transmission:
-              </span>
-              <p>{car.transmission}</p>
+            <div className="border p-3 rounded-xl bg-gray-50">
+              <span className="text-gray-400 block mb-0.5">Transmission</span>
+              <p className="font-semibold capitalize">{car.transmission}</p>
             </div>
-
-            <div className="border p-3 rounded-lg">
-              <span className="font-semibold">
-                Seats:
-              </span>
-              <p>{car.seats}</p>
+            <div className="border p-3 rounded-xl bg-gray-50">
+              <span className="text-gray-400 block mb-0.5">Capacity</span>
+              <p className="font-semibold">{car.seats} Seats</p>
             </div>
-
-            <div className="border p-3 rounded-lg">
-              <span className="font-semibold">
-                Price Per Day:
-              </span>
-              <p>₦{car.pricePerDay}</p>
+            <div className="border p-3 rounded-xl bg-gray-50">
+              <span className="text-gray-400 block mb-0.5">Price Per Day</span>
+              <p className="font-semibold text-black">₦{car.pricePerDay.toLocaleString()}</p>
             </div>
           </div>
 
-          {/* BOOKING FORM */}
-          <div className="border rounded-xl p-5 space-y-4">
-
-            <h2 className="text-xl font-bold">
-              Book This Car
-            </h2>
-
-            <div>
-              <label className="text-sm">
-                Start Date
-              </label>
-
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) =>
-                  setStartDate(e.target.value)
-                }
-                className="w-full border p-3 rounded-lg mt-1"
-              />
-            </div>
-
-            <div>
-              <label className="text-sm">
-                End Date
-              </label>
-
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) =>
-                  setEndDate(e.target.value)
-                }
-                className="w-full border p-3 rounded-lg mt-1"
-              />
+          <div className="border rounded-xl p-5 space-y-4 bg-white shadow-sm">
+            <h2 className="text-xl font-bold">Book This Car</h2>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-gray-500 font-medium uppercase">Start Date</label>
+                <input
+                  type="date"
+                  value={startDate}
+                  min={new Date().toISOString().split("T")[0]}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="w-full border p-3 rounded-lg mt-1 text-sm focus:outline-none focus:ring-1 focus:ring-black"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 font-medium uppercase">End Date</label>
+                <input
+                  type="date"
+                  value={endDate}
+                  min={startDate || new Date().toISOString().split("T")[0]}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="w-full border p-3 rounded-lg mt-1 text-sm focus:outline-none focus:ring-1 focus:ring-black"
+                />
+              </div>
             </div>
 
             <button
               onClick={handleBooking}
               disabled={bookingLoading}
-              className="w-full bg-black text-white py-3 rounded-lg"
+              className="w-full bg-black text-white py-3.5 rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:bg-gray-400"
             >
-              {bookingLoading
-                ? "Booking..."
-                : "Book Car"}
+              {bookingLoading ? "Processing Booking..." : "Book Car Now"}
             </button>
           </div>
         </div>
