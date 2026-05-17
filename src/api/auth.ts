@@ -2,7 +2,7 @@ import type { AuthRespose } from "../types/auth"
 import API from "./client"
 
 type RegisterData = {
-    name: string,
+    username: string,
     email: string,
     password: string
 }
